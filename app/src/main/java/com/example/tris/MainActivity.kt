@@ -63,11 +63,11 @@ enum class Screen {
 }
 
 enum class OpponentType {
-    Human, AI, Alien, Cat, Free
+    Human, AI, Alien, Cat, Cowboy, Free
 }
 
 enum class PlayerSkin {
-    Human, Robot, Alien, Cat
+    Human, Robot, Alien, Cat, Cowboy
 }
 
 enum class GameMode {
@@ -162,6 +162,11 @@ fun HomeScreen(onStartGame: (OpponentType, GameMode, PlayerSkin, PlayerSkin) -> 
                     ) { Text(text = "Cats", fontSize = 20.sp) }
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(
+                        onClick = { selectedOpponent = OpponentType.Cowboy; step = 4 },
+                        modifier = Modifier.fillMaxWidth(0.6f)
+                    ) { Text(text = "Cowboys", fontSize = 20.sp) }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(
                         onClick = { selectedOpponent = OpponentType.Free; step = 2 },
                         modifier = Modifier.fillMaxWidth(0.6f)
                     ) { Text(text = "Free", fontSize = 20.sp) }
@@ -173,7 +178,7 @@ fun HomeScreen(onStartGame: (OpponentType, GameMode, PlayerSkin, PlayerSkin) -> 
                         style = MaterialTheme.typography.bodyLarge,
                         modifier = Modifier.padding(bottom = 24.dp)
                     )
-                    val skins = listOf(PlayerSkin.Human, PlayerSkin.Alien, PlayerSkin.Cat)
+                    val skins = listOf(PlayerSkin.Human, PlayerSkin.Alien, PlayerSkin.Cat, PlayerSkin.Cowboy)
                     skins.forEach { skin ->
                         Button(
                             onClick = { p1Skin = skin; step = 3 },
@@ -192,7 +197,7 @@ fun HomeScreen(onStartGame: (OpponentType, GameMode, PlayerSkin, PlayerSkin) -> 
                         style = MaterialTheme.typography.bodyLarge,
                         modifier = Modifier.padding(bottom = 24.dp)
                     )
-                    val skins = listOf(PlayerSkin.Human, PlayerSkin.Alien, PlayerSkin.Cat)
+                    val skins = listOf(PlayerSkin.Human, PlayerSkin.Alien, PlayerSkin.Cat, PlayerSkin.Cowboy)
                     skins.forEach { skin ->
                         Button(
                             onClick = { p2Skin = skin; step = 4 },
@@ -220,6 +225,7 @@ fun HomeScreen(onStartGame: (OpponentType, GameMode, PlayerSkin, PlayerSkin) -> 
                                     OpponentType.AI -> PlayerSkin.Robot
                                     OpponentType.Alien -> PlayerSkin.Alien
                                     OpponentType.Cat -> PlayerSkin.Cat
+                                    OpponentType.Cowboy -> PlayerSkin.Cowboy
                                     else -> PlayerSkin.Human
                                 }
                                 onStartGame(selectedOpponent, mode, finalP1Skin, finalP2Skin)
@@ -352,6 +358,7 @@ fun GameScreen(
         OpponentType.AI -> Color(0xFF00AA00) // Stronger Green
         OpponentType.Alien -> Color(0xFF444444) // Darker Gray for contrast
         OpponentType.Cat -> Color.Black
+        OpponentType.Cowboy -> Color(0xFF8B4513) // Saddle Brown
         else -> Color(0xFFDD0000)
     }
 
@@ -365,13 +372,14 @@ fun GameScreen(
         OpponentType.AI -> "AI"
         OpponentType.Alien -> "Aliens"
         OpponentType.Cat -> "Cats"
+        OpponentType.Cowboy -> "Cowboys"
         else -> "Cross"
     }
 
     val onCellClick: (Int) -> Unit = { index ->
         if (board[index] == null && roundWinner == null && matchWinner == null && !isDraw) {
             // In VS AI modes, only allow clicking if it's Player O's turn
-            val isP2AI = opponentType in listOf(OpponentType.AI, OpponentType.Alien, OpponentType.Cat)
+            val isP2AI = opponentType in listOf(OpponentType.AI, OpponentType.Alien, OpponentType.Cat, OpponentType.Cowboy)
             if (!isP2AI || currentPlayer == Player.O) {
                 val newBoard = board.toMutableList()
                 newBoard[index] = currentPlayer
@@ -400,7 +408,7 @@ fun GameScreen(
 
     // AI/Alien/Cat Logic
     LaunchedEffect(currentPlayer, roundWinner, matchWinner, isDraw) {
-        val isP2AI = opponentType in listOf(OpponentType.AI, OpponentType.Alien, OpponentType.Cat)
+        val isP2AI = opponentType in listOf(OpponentType.AI, OpponentType.Alien, OpponentType.Cat, OpponentType.Cowboy)
         if (isP2AI && currentPlayer == Player.X && roundWinner == null && matchWinner == null && !isDraw) {
             delay(600) // Small delay for better UX
             val aiMove = getAiMove(board, Player.X, Player.O)
@@ -563,6 +571,7 @@ fun androidx.compose.ui.graphics.drawscope.DrawScope.drawSkinIcon(skin: PlayerSk
         PlayerSkin.Robot -> drawRobotIcon(center, color, strokeWidth)
         PlayerSkin.Alien -> drawStarshipIcon(center, color, strokeWidth)
         PlayerSkin.Cat -> drawCatIcon(center, color, strokeWidth)
+        PlayerSkin.Cowboy -> drawCowboyIcon(center, color, strokeWidth)
     }
 }
 
@@ -887,6 +896,9 @@ fun Cell(player: Player?, circleColor: Color, crossColor: Color, p1Skin: PlayerS
                 PlayerSkin.Alien -> Canvas(modifier = Modifier.size(48.dp)) {
                     drawAlienFace(this.size.center, color)
                 }
+                PlayerSkin.Cowboy -> Canvas(modifier = Modifier.size(48.dp)) {
+                    drawHorseshoe(this.size.center, color, 4.dp.toPx())
+                }
                 else -> Text(
                     text = if (player == Player.O) "O" else "X",
                     fontSize = 48.sp,
@@ -895,6 +907,59 @@ fun Cell(player: Player?, circleColor: Color, crossColor: Color, p1Skin: PlayerS
                 )
             }
         }
+    }
+}
+
+fun androidx.compose.ui.graphics.drawscope.DrawScope.drawCowboyIcon(center: Offset, color: Color, strokeWidth: Float) {
+    val hatWidth = 34.dp.toPx()
+    val hatHeight = 18.dp.toPx()
+    val brimWidth = 54.dp.toPx()
+    val brimHeight = 10.dp.toPx()
+    
+    // Curved Brim
+    val brimPath = androidx.compose.ui.graphics.Path().apply {
+        moveTo(center.x - brimWidth / 2, center.y + 2.dp.toPx())
+        quadraticTo(center.x, center.y + brimHeight, center.x + brimWidth / 2, center.y + 2.dp.toPx())
+        quadraticTo(center.x, center.y + 6.dp.toPx(), center.x - brimWidth / 2, center.y + 2.dp.toPx())
+    }
+    drawPath(path = brimPath, color = color, style = Stroke(width = strokeWidth))
+    
+    // Hat top with a crease
+    val crownPath = androidx.compose.ui.graphics.Path().apply {
+        moveTo(center.x - hatWidth / 2, center.y + 2.dp.toPx())
+        lineTo(center.x - hatWidth / 2, center.y - hatHeight * 0.7f)
+        quadraticTo(center.x - hatWidth / 2, center.y - hatHeight, center.x - hatWidth / 4, center.y - hatHeight)
+        // Crease in the middle
+        lineTo(center.x, center.y - hatHeight * 0.85f)
+        lineTo(center.x + hatWidth / 4, center.y - hatHeight)
+        quadraticTo(center.x + hatWidth / 2, center.y - hatHeight, center.x + hatWidth / 2, center.y - hatHeight * 0.7f)
+        lineTo(center.x + hatWidth / 2, center.y + 2.dp.toPx())
+    }
+    drawPath(path = crownPath, color = color, style = Stroke(width = strokeWidth))
+}
+
+fun androidx.compose.ui.graphics.drawscope.DrawScope.drawHorseshoe(center: Offset, color: Color, strokeWidth: Float) {
+    val radius = 18.dp.toPx()
+    val path = androidx.compose.ui.graphics.Path().apply {
+        // More defined U shape
+        moveTo(center.x - radius * 0.7f, center.y - radius)
+        lineTo(center.x - radius * 0.7f, center.y - radius * 0.3f)
+        quadraticTo(center.x - radius * 0.7f, center.y + radius, center.x, center.y + radius)
+        quadraticTo(center.x + radius * 0.7f, center.y + radius, center.x + radius * 0.7f, center.y - radius * 0.3f)
+        lineTo(center.x + radius * 0.7f, center.y - radius)
+    }
+    drawPath(path = path, color = color, style = Stroke(width = strokeWidth, cap = StrokeCap.Butt))
+
+    // Add "nail holes" for detail
+    val holeRadius = 1.5.dp.toPx()
+    val holeOffsets = listOf(
+        Offset(center.x - radius * 0.7f, center.y + radius * 0.2f),
+        Offset(center.x - radius * 0.45f, center.y + radius * 0.75f),
+        Offset(center.x + radius * 0.45f, center.y + radius * 0.75f),
+        Offset(center.x + radius * 0.7f, center.y + radius * 0.2f)
+    )
+    holeOffsets.forEach { offset ->
+        drawCircle(color = color, radius = holeRadius, center = offset)
     }
 }
 
