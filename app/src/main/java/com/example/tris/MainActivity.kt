@@ -519,7 +519,7 @@ fun GameBackground(p1Skin: PlayerSkin, p2Skin: PlayerSkin, circleColor: Color, c
 
     Canvas(modifier = Modifier.fillMaxSize()) {
         val strokeWidth = 4.dp.toPx()
-        val verticalOffset = size.height * 0.07f
+        val verticalOffset = size.height * 0.08f
 
         // Draw Player 1 icon and name on the left
         val center1 = Offset(size.width * 0.15f, verticalOffset)
@@ -535,7 +535,7 @@ fun GameBackground(p1Skin: PlayerSkin, p2Skin: PlayerSkin, circleColor: Color, c
         )
         drawText(
             textLayoutResult = textLayoutResultO,
-            topLeft = Offset(center1.x - textLayoutResultO.size.width / 2f, center1.y + 35.dp.toPx())
+            topLeft = Offset(center1.x - textLayoutResultO.size.width / 2f, center1.y + 50.dp.toPx())
         )
 
         // Draw Player 2 icon and name on the right
@@ -552,7 +552,7 @@ fun GameBackground(p1Skin: PlayerSkin, p2Skin: PlayerSkin, circleColor: Color, c
         )
         drawText(
             textLayoutResult = textLayoutResultX,
-            topLeft = Offset(center2.x - textLayoutResultX.size.width / 2f, center2.y + 35.dp.toPx())
+            topLeft = Offset(center2.x - textLayoutResultX.size.width / 2f, center2.y + 50.dp.toPx())
         )
     }
 }
