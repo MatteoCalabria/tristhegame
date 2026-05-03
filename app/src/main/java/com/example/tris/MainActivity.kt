@@ -37,6 +37,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.drawText
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -112,7 +114,6 @@ fun TrisApp() {
 fun HomeScreen(onStartGame: (OpponentType, GameMode, PlayerSkin, PlayerSkin) -> Unit, modifier: Modifier = Modifier) {
     var step by remember { mutableStateOf(1) }
     var selectedOpponent by remember { mutableStateOf(OpponentType.Human) }
-    var selectedMode by remember { mutableStateOf(GameMode.Single) }
     var p1Skin by remember { mutableStateOf(PlayerSkin.Human) }
     var p2Skin by remember { mutableStateOf(PlayerSkin.Human) }
 
@@ -141,22 +142,22 @@ fun HomeScreen(onStartGame: (OpponentType, GameMode, PlayerSkin, PlayerSkin) -> 
                         modifier = Modifier.padding(bottom = 24.dp)
                     )
                     Button(
-                        onClick = { selectedOpponent = OpponentType.Human; step = 2 },
+                        onClick = { selectedOpponent = OpponentType.Human; step = 4 },
                         modifier = Modifier.fillMaxWidth(0.6f)
                     ) { Text(text = "Humans", fontSize = 20.sp) }
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(
-                        onClick = { selectedOpponent = OpponentType.AI; step = 2 },
+                        onClick = { selectedOpponent = OpponentType.AI; step = 4 },
                         modifier = Modifier.fillMaxWidth(0.6f)
                     ) { Text(text = "AI", fontSize = 20.sp) }
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(
-                        onClick = { selectedOpponent = OpponentType.Alien; step = 2 },
+                        onClick = { selectedOpponent = OpponentType.Alien; step = 4 },
                         modifier = Modifier.fillMaxWidth(0.6f)
                     ) { Text(text = "Aliens", fontSize = 20.sp) }
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(
-                        onClick = { selectedOpponent = OpponentType.Cat; step = 2 },
+                        onClick = { selectedOpponent = OpponentType.Cat; step = 4 },
                         modifier = Modifier.fillMaxWidth(0.6f)
                     ) { Text(text = "Cats", fontSize = 20.sp) }
                     Spacer(modifier = Modifier.height(16.dp))
@@ -167,6 +168,44 @@ fun HomeScreen(onStartGame: (OpponentType, GameMode, PlayerSkin, PlayerSkin) -> 
                 }
                 2 -> {
                     Text(
+                        text = "Choose first player",
+                        fontSize = 20.sp,
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(bottom = 24.dp)
+                    )
+                    val skins = listOf(PlayerSkin.Human, PlayerSkin.Alien, PlayerSkin.Cat)
+                    skins.forEach { skin ->
+                        Button(
+                            onClick = { p1Skin = skin; step = 3 },
+                            modifier = Modifier.fillMaxWidth(0.6f)
+                        ) { Text(text = skin.name, fontSize = 20.sp) }
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+                    Button(onClick = { step = 1 }, modifier = Modifier.fillMaxWidth(0.4f)) {
+                        Text(text = "Back")
+                    }
+                }
+                3 -> {
+                    Text(
+                        text = "Choose second player",
+                        fontSize = 20.sp,
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(bottom = 24.dp)
+                    )
+                    val skins = listOf(PlayerSkin.Human, PlayerSkin.Alien, PlayerSkin.Cat)
+                    skins.forEach { skin ->
+                        Button(
+                            onClick = { p2Skin = skin; step = 4 },
+                            modifier = Modifier.fillMaxWidth(0.6f)
+                        ) { Text(text = skin.name, fontSize = 20.sp) }
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+                    Button(onClick = { step = 2 }, modifier = Modifier.fillMaxWidth(0.4f)) {
+                        Text(text = "Back")
+                    }
+                }
+                4 -> {
+                    Text(
                         text = "Choose the rules",
                         fontSize = 20.sp,
                         style = MaterialTheme.typography.bodyLarge,
@@ -176,19 +215,14 @@ fun HomeScreen(onStartGame: (OpponentType, GameMode, PlayerSkin, PlayerSkin) -> 
                     modes.forEach { mode ->
                         Button(
                             onClick = {
-                                selectedMode = mode
-                                if (selectedOpponent == OpponentType.Free) {
-                                    step = 3
-                                } else {
-                                    val s1 = PlayerSkin.Human
-                                    val s2 = when (selectedOpponent) {
-                                        OpponentType.AI -> PlayerSkin.Robot
-                                        OpponentType.Alien -> PlayerSkin.Alien
-                                        OpponentType.Cat -> PlayerSkin.Cat
-                                        else -> PlayerSkin.Human
-                                    }
-                                    onStartGame(selectedOpponent, mode, s1, s2)
+                                val finalP1Skin = if (selectedOpponent == OpponentType.Free) p1Skin else PlayerSkin.Human
+                                val finalP2Skin = if (selectedOpponent == OpponentType.Free) p2Skin else when (selectedOpponent) {
+                                    OpponentType.AI -> PlayerSkin.Robot
+                                    OpponentType.Alien -> PlayerSkin.Alien
+                                    OpponentType.Cat -> PlayerSkin.Cat
+                                    else -> PlayerSkin.Human
                                 }
+                                onStartGame(selectedOpponent, mode, finalP1Skin, finalP2Skin)
                             },
                             modifier = Modifier.fillMaxWidth(0.6f)
                         ) {
@@ -200,45 +234,7 @@ fun HomeScreen(onStartGame: (OpponentType, GameMode, PlayerSkin, PlayerSkin) -> 
                         }
                         Spacer(modifier = Modifier.height(16.dp))
                     }
-                    Button(onClick = { step = 1 }, modifier = Modifier.fillMaxWidth(0.4f)) {
-                        Text(text = "Back")
-                    }
-                }
-                3 -> {
-                    Text(
-                        text = "Choose first player",
-                        fontSize = 20.sp,
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.padding(bottom = 24.dp)
-                    )
-                    val skins = listOf(PlayerSkin.Human, PlayerSkin.Alien, PlayerSkin.Cat)
-                    skins.forEach { skin ->
-                        Button(
-                            onClick = { p1Skin = skin; step = 4 },
-                            modifier = Modifier.fillMaxWidth(0.6f)
-                        ) { Text(text = skin.name, fontSize = 20.sp) }
-                        Spacer(modifier = Modifier.height(16.dp))
-                    }
-                    Button(onClick = { step = 2 }, modifier = Modifier.fillMaxWidth(0.4f)) {
-                        Text(text = "Back")
-                    }
-                }
-                4 -> {
-                    Text(
-                        text = "Choose second player",
-                        fontSize = 20.sp,
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.padding(bottom = 24.dp)
-                    )
-                    val skins = listOf(PlayerSkin.Human, PlayerSkin.Alien, PlayerSkin.Cat)
-                    skins.forEach { skin ->
-                        Button(
-                            onClick = { onStartGame(OpponentType.Free, selectedMode, p1Skin, skin) },
-                            modifier = Modifier.fillMaxWidth(0.6f)
-                        ) { Text(text = skin.name, fontSize = 20.sp) }
-                        Spacer(modifier = Modifier.height(16.dp))
-                    }
-                    Button(onClick = { step = 3 }, modifier = Modifier.fillMaxWidth(0.4f)) {
+                    Button(onClick = { step = if (selectedOpponent == OpponentType.Free) 3 else 1 }, modifier = Modifier.fillMaxWidth(0.4f)) {
                         Text(text = "Back")
                     }
                 }
@@ -359,8 +355,12 @@ fun GameScreen(
         else -> Color.Red
     }
 
-    val nameO = if (opponentType == OpponentType.Free) "${p1Skin.name} 1" else "Circle"
-    val nameX = if (opponentType == OpponentType.Free) "${p2Skin.name} 2" else when (opponentType) {
+    val nameO = when (opponentType) {
+        OpponentType.Free -> "${p1Skin.name} 1"
+        else -> "Circle"
+    }
+    val nameX = when (opponentType) {
+        OpponentType.Free -> "${p2Skin.name} 2"
         OpponentType.Human -> "Cross"
         OpponentType.AI -> "AI"
         OpponentType.Alien -> "Aliens"
@@ -444,17 +444,17 @@ fun GameScreen(
     }
 
     Box(modifier = modifier.fillMaxSize()) {
-        GameBackground(p1Skin, p2Skin, circleColor, crossColor)
+        GameBackground(p1Skin, p2Skin, circleColor, crossColor, nameO, nameX)
         Column(
             modifier = Modifier.fillMaxSize().padding(16.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            if (gameMode != GameMode.Single) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                if (gameMode != GameMode.Single) {
                     ScoreText(label = nameO, score = scoreO, color = circleColor)
                     ScoreText(label = nameX, score = scoreX, color = crossColor)
                 }
@@ -511,17 +511,49 @@ fun GameScreen(
 }
 
 @Composable
-fun GameBackground(p1Skin: PlayerSkin, p2Skin: PlayerSkin, circleColor: Color, crossColor: Color) {
+fun GameBackground(p1Skin: PlayerSkin, p2Skin: PlayerSkin, circleColor: Color, crossColor: Color, nameO: String, nameX: String) {
+    val textMeasurer = rememberTextMeasurer()
+    val alpha = 0.25f
+    val textColorO = circleColor.copy(alpha = alpha)
+    val textColorX = crossColor.copy(alpha = alpha)
+
     Canvas(modifier = Modifier.fillMaxSize()) {
         val strokeWidth = 4.dp.toPx()
-        val verticalOffset = size.height * 0.08f
-        val alpha = 0.25f
+        val verticalOffset = size.height * 0.07f
 
-        // Draw Player 1 icon on the left
-        drawSkinIcon(p1Skin, Offset(size.width * 0.15f, verticalOffset), circleColor.copy(alpha = alpha), strokeWidth)
+        // Draw Player 1 icon and name on the left
+        val center1 = Offset(size.width * 0.15f, verticalOffset)
+        drawSkinIcon(p1Skin, center1, circleColor.copy(alpha = alpha), strokeWidth)
         
-        // Draw Player 2 icon on the right
-        drawSkinIcon(p2Skin, Offset(size.width * 0.85f, verticalOffset), crossColor.copy(alpha = alpha), strokeWidth)
+        val textLayoutResultO = textMeasurer.measure(
+            text = nameO,
+            style = androidx.compose.ui.text.TextStyle(
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = textColorO
+            )
+        )
+        drawText(
+            textLayoutResult = textLayoutResultO,
+            topLeft = Offset(center1.x - textLayoutResultO.size.width / 2f, center1.y + 35.dp.toPx())
+        )
+
+        // Draw Player 2 icon and name on the right
+        val center2 = Offset(size.width * 0.85f, verticalOffset)
+        drawSkinIcon(p2Skin, center2, crossColor.copy(alpha = alpha), strokeWidth)
+
+        val textLayoutResultX = textMeasurer.measure(
+            text = nameX,
+            style = androidx.compose.ui.text.TextStyle(
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = textColorX
+            )
+        )
+        drawText(
+            textLayoutResult = textLayoutResultX,
+            topLeft = Offset(center2.x - textLayoutResultX.size.width / 2f, center2.y + 35.dp.toPx())
+        )
     }
 }
 
@@ -541,9 +573,9 @@ fun androidx.compose.ui.graphics.drawscope.DrawScope.drawHumanIcon(
     isFemale: Boolean = false,
     isCombined: Boolean = false
 ) {
-    val headRadius = 20.dp.toPx()
-    val bodyHeight = 40.dp.toPx()
-    val bodyWidth = 30.dp.toPx()
+    val headRadius = 15.dp.toPx()
+    val bodyHeight = 30.dp.toPx()
+    val bodyWidth = 22.dp.toPx()
 
     // Head
     drawCircle(color = color, radius = headRadius, center = center.copy(y = center.y - headRadius - 5f), style = Stroke(width = strokeWidth))
