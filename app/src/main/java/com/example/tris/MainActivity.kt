@@ -32,11 +32,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.tris.ui.theme.TrisTheme
+import kotlin.random.Random
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -87,30 +89,118 @@ fun TrisApp() {
 
 @Composable
 fun HomeScreen(onStartGame: (GameMode) -> Unit, modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = "Tris Game",
-            fontSize = 48.sp,
-            style = MaterialTheme.typography.headlineLarge
+    Box(modifier = modifier.fillMaxSize()) {
+        TrisBackground()
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "Tris Game",
+                fontSize = 48.sp,
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.ExtraBold,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.height(48.dp))
+            Button(
+                onClick = { onStartGame(GameMode.Single) },
+                modifier = Modifier.fillMaxWidth(0.6f)
+            ) {
+                Text(text = "Single Match", fontSize = 20.sp)
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(
+                onClick = { onStartGame(GameMode.BestOf3) },
+                modifier = Modifier.fillMaxWidth(0.6f)
+            ) {
+                Text(text = "Best of 3", fontSize = 20.sp)
+            }
+        }
+    }
+}
+
+@Composable
+fun TrisBackground() {
+    Canvas(modifier = Modifier.fillMaxSize()) {
+        val color = Color.Gray.copy(alpha = 0.05f)
+        val strokeWidth = 8.dp.toPx()
+
+        // Draw a large faint grid
+        val gridSize = size.minDimension * 0.8f
+        val startX = (size.width - gridSize) / 2
+        val startY = (size.height - gridSize) / 2
+
+        for (i in 1..2) {
+            // Vertical lines
+            drawLine(
+                color = color,
+                start = Offset(startX + i * gridSize / 3, startY),
+                end = Offset(startX + i * gridSize / 3, startY + gridSize),
+                strokeWidth = strokeWidth / 2
+            )
+            // Horizontal lines
+            drawLine(
+                color = color,
+                start = Offset(startX, startY + i * gridSize / 3),
+                end = Offset(startX + gridSize, startY + i * gridSize / 3),
+                strokeWidth = strokeWidth / 2
+            )
+        }
+
+        // Draw some random faint symbols
+        val symbolSize = 60.dp.toPx()
+        
+        // Top Left O
+        drawCircle(
+            color = color,
+            radius = symbolSize / 2,
+            center = Offset(size.width * 0.15f, size.height * 0.15f),
+            style = Stroke(width = strokeWidth)
         )
-        Spacer(modifier = Modifier.height(48.dp))
-        Button(
-            onClick = { onStartGame(GameMode.Single) },
-            modifier = Modifier.fillMaxWidth(0.6f)
-        ) {
-            Text(text = "Single Match", fontSize = 20.sp)
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-        Button(
-            onClick = { onStartGame(GameMode.BestOf3) },
-            modifier = Modifier.fillMaxWidth(0.6f)
-        ) {
-            Text(text = "Best of 3", fontSize = 20.sp)
-        }
+
+        // Bottom Right X
+        val xCenter = Offset(size.width * 0.85f, size.height * 0.85f)
+        drawLine(
+            color = color,
+            start = Offset(xCenter.x - symbolSize / 2, xCenter.y - symbolSize / 2),
+            end = Offset(xCenter.x + symbolSize / 2, xCenter.y + symbolSize / 2),
+            strokeWidth = strokeWidth,
+            cap = StrokeCap.Round
+        )
+        drawLine(
+            color = color,
+            start = Offset(xCenter.x + symbolSize / 2, xCenter.y - symbolSize / 2),
+            end = Offset(xCenter.x - symbolSize / 2, xCenter.y + symbolSize / 2),
+            strokeWidth = strokeWidth,
+            cap = StrokeCap.Round
+        )
+        
+        // Mid Left X
+        val xCenter2 = Offset(size.width * 0.1f, size.height * 0.6f)
+        drawLine(
+            color = color,
+            start = Offset(xCenter2.x - symbolSize / 3, xCenter2.y - symbolSize / 3),
+            end = Offset(xCenter2.x + symbolSize / 3, xCenter2.y + symbolSize / 3),
+            strokeWidth = strokeWidth,
+            cap = StrokeCap.Round
+        )
+        drawLine(
+            color = color,
+            start = Offset(xCenter2.x + symbolSize / 3, xCenter2.y - symbolSize / 3),
+            end = Offset(xCenter2.x - symbolSize / 3, xCenter2.y + symbolSize / 3),
+            strokeWidth = strokeWidth,
+            cap = StrokeCap.Round
+        )
+
+        // Mid Right O
+        drawCircle(
+            color = color,
+            radius = symbolSize / 3,
+            center = Offset(size.width * 0.9f, size.height * 0.4f),
+            style = Stroke(width = strokeWidth)
+        )
     }
 }
 
@@ -118,7 +208,7 @@ fun HomeScreen(onStartGame: (GameMode) -> Unit, modifier: Modifier = Modifier) {
 fun GameScreen(gameMode: GameMode, onBackToHome: () -> Unit, modifier: Modifier = Modifier) {
     var scoreO by remember { mutableIntStateOf(0) }
     var scoreX by remember { mutableIntStateOf(0) }
-    var startingPlayer by remember { mutableStateOf(Player.O) }
+    var startingPlayer by remember { mutableStateOf(if (Random.nextBoolean()) Player.O else Player.X) }
 
     var board by remember { mutableStateOf(List(9) { null as Player? }) }
     var currentPlayer by remember { mutableStateOf(startingPlayer) }
@@ -155,7 +245,7 @@ fun GameScreen(gameMode: GameMode, onBackToHome: () -> Unit, modifier: Modifier 
 
     val resetRound = {
         board = List(9) { null }
-        val nextStart = if (startingPlayer == Player.O) Player.X else Player.O
+        val nextStart = if (Random.nextBoolean()) Player.O else Player.X
         startingPlayer = nextStart
         currentPlayer = nextStart
         winningPattern = null
@@ -249,6 +339,12 @@ fun Board(board: List<Player?>, winningPattern: List<Int>?, onCellClick: (Int) -
         }
 
         if (winningPattern != null) {
+            val winningPlayer = board[winningPattern[0]]
+            val lineColor = when (winningPlayer) {
+                Player.X -> Color.Red
+                Player.O -> Color.Blue
+                else -> Color.Black
+            }
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val cellSize = size.width / 3
                 val startRow = winningPattern[0] / 3
@@ -257,7 +353,7 @@ fun Board(board: List<Player?>, winningPattern: List<Int>?, onCellClick: (Int) -
                 val endCol = winningPattern[2] % 3
 
                 drawLine(
-                    color = Color.Black,
+                    color = lineColor,
                     start = Offset(
                         x = startCol * cellSize + cellSize / 2,
                         y = startRow * cellSize + cellSize / 2
