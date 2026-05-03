@@ -346,13 +346,13 @@ fun GameScreen(
     var matchWinner by remember { mutableStateOf(null as Player?) }
     var isDraw by remember { mutableStateOf(false) }
 
-    val circleColor = Color.Blue
+    val circleColor = Color(0xFF0000CC) // Deeper Blue
     val crossColor = when (opponentType) {
-        OpponentType.Free -> Color.Red
-        OpponentType.AI -> Color.Green
-        OpponentType.Alien -> Color.Gray
+        OpponentType.Free -> Color(0xFFDD0000) // Stronger Red
+        OpponentType.AI -> Color(0xFF00AA00) // Stronger Green
+        OpponentType.Alien -> Color(0xFF444444) // Darker Gray for contrast
         OpponentType.Cat -> Color.Black
-        else -> Color.Red
+        else -> Color(0xFFDD0000)
     }
 
     val nameO = when (opponentType) {
@@ -513,9 +513,9 @@ fun GameScreen(
 @Composable
 fun GameBackground(p1Skin: PlayerSkin, p2Skin: PlayerSkin, circleColor: Color, crossColor: Color, nameO: String, nameX: String) {
     val textMeasurer = rememberTextMeasurer()
-    val alpha = 0.25f
-    val textColorO = circleColor.copy(alpha = alpha)
-    val textColorX = crossColor.copy(alpha = alpha)
+    val bgAlpha = 0.4f // Increased alpha for better contrast
+    val textColorO = circleColor // Full opacity for text
+    val textColorX = crossColor // Full opacity for text
 
     Canvas(modifier = Modifier.fillMaxSize()) {
         val strokeWidth = 4.dp.toPx()
@@ -523,7 +523,7 @@ fun GameBackground(p1Skin: PlayerSkin, p2Skin: PlayerSkin, circleColor: Color, c
 
         // Draw Player 1 icon and name on the left
         val center1 = Offset(size.width * 0.15f, verticalOffset)
-        drawSkinIcon(p1Skin, center1, circleColor.copy(alpha = alpha), strokeWidth)
+        drawSkinIcon(p1Skin, center1, circleColor.copy(alpha = bgAlpha), strokeWidth)
         
         val textLayoutResultO = textMeasurer.measure(
             text = nameO,
@@ -540,7 +540,7 @@ fun GameBackground(p1Skin: PlayerSkin, p2Skin: PlayerSkin, circleColor: Color, c
 
         // Draw Player 2 icon and name on the right
         val center2 = Offset(size.width * 0.85f, verticalOffset)
-        drawSkinIcon(p2Skin, center2, crossColor.copy(alpha = alpha), strokeWidth)
+        drawSkinIcon(p2Skin, center2, crossColor.copy(alpha = bgAlpha), strokeWidth)
 
         val textLayoutResultX = textMeasurer.measure(
             text = nameX,
