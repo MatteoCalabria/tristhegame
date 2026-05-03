@@ -17,10 +17,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.ui.geometry.center
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -59,7 +61,11 @@ enum class Screen {
 }
 
 enum class OpponentType {
-    Human, AI
+    Human, AI, Alien, Cat, Free
+}
+
+enum class PlayerSkin {
+    Human, Robot, Alien, Cat
 }
 
 enum class GameMode {
@@ -75,13 +81,17 @@ fun TrisApp() {
     var currentScreen by remember { mutableStateOf(Screen.Home) }
     var selectedOpponent by remember { mutableStateOf(OpponentType.Human) }
     var selectedMode by remember { mutableStateOf(GameMode.Single) }
+    var p1Skin by remember { mutableStateOf(PlayerSkin.Human) }
+    var p2Skin by remember { mutableStateOf(PlayerSkin.Human) }
 
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
         when (currentScreen) {
             Screen.Home -> HomeScreen(
-                onStartGame = { opponent, mode ->
+                onStartGame = { opponent, mode, s1, s2 ->
                     selectedOpponent = opponent
                     selectedMode = mode
+                    p1Skin = s1
+                    p2Skin = s2
                     currentScreen = Screen.Game
                 },
                 modifier = Modifier.padding(innerPadding),
@@ -89,6 +99,8 @@ fun TrisApp() {
             Screen.Game -> GameScreen(
                 opponentType = selectedOpponent,
                 gameMode = selectedMode,
+                p1Skin = p1Skin,
+                p2Skin = p2Skin,
                 onBackToHome = { currentScreen = Screen.Home },
                 modifier = Modifier.padding(innerPadding),
             )
@@ -97,9 +109,12 @@ fun TrisApp() {
 }
 
 @Composable
-fun HomeScreen(onStartGame: (OpponentType, GameMode) -> Unit, modifier: Modifier = Modifier) {
+fun HomeScreen(onStartGame: (OpponentType, GameMode, PlayerSkin, PlayerSkin) -> Unit, modifier: Modifier = Modifier) {
     var step by remember { mutableStateOf(1) }
     var selectedOpponent by remember { mutableStateOf(OpponentType.Human) }
+    var selectedMode by remember { mutableStateOf(GameMode.Single) }
+    var p1Skin by remember { mutableStateOf(PlayerSkin.Human) }
+    var p2Skin by remember { mutableStateOf(PlayerSkin.Human) }
 
     Box(modifier = modifier.fillMaxSize()) {
         TrisBackground()
@@ -117,53 +132,115 @@ fun HomeScreen(onStartGame: (OpponentType, GameMode) -> Unit, modifier: Modifier
             )
             Spacer(modifier = Modifier.height(48.dp))
 
-            if (step == 1) {
-                Button(
-                    onClick = {
-                        selectedOpponent = OpponentType.Human
-                        step = 2
-                    },
-                    modifier = Modifier.fillMaxWidth(0.6f)
-                ) {
-                    Text(text = "Human vs Human", fontSize = 20.sp)
+            when (step) {
+                1 -> {
+                    Text(
+                        text = "Choose your opponents",
+                        fontSize = 20.sp,
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(bottom = 24.dp)
+                    )
+                    Button(
+                        onClick = { selectedOpponent = OpponentType.Human; step = 2 },
+                        modifier = Modifier.fillMaxWidth(0.6f)
+                    ) { Text(text = "Humans", fontSize = 20.sp) }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(
+                        onClick = { selectedOpponent = OpponentType.AI; step = 2 },
+                        modifier = Modifier.fillMaxWidth(0.6f)
+                    ) { Text(text = "AI", fontSize = 20.sp) }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(
+                        onClick = { selectedOpponent = OpponentType.Alien; step = 2 },
+                        modifier = Modifier.fillMaxWidth(0.6f)
+                    ) { Text(text = "Aliens", fontSize = 20.sp) }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(
+                        onClick = { selectedOpponent = OpponentType.Cat; step = 2 },
+                        modifier = Modifier.fillMaxWidth(0.6f)
+                    ) { Text(text = "Cats", fontSize = 20.sp) }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(
+                        onClick = { selectedOpponent = OpponentType.Free; step = 2 },
+                        modifier = Modifier.fillMaxWidth(0.6f)
+                    ) { Text(text = "Free", fontSize = 20.sp) }
                 }
-                Spacer(modifier = Modifier.height(16.dp))
-                Button(
-                    onClick = {
-                        selectedOpponent = OpponentType.AI
-                        step = 2
-                    },
-                    modifier = Modifier.fillMaxWidth(0.6f)
-                ) {
-                    Text(text = "Human vs AI", fontSize = 20.sp)
+                2 -> {
+                    Text(
+                        text = "Choose the rules",
+                        fontSize = 20.sp,
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(bottom = 24.dp)
+                    )
+                    val modes = listOf(GameMode.Single, GameMode.BestOf3, GameMode.BattleRoyale)
+                    modes.forEach { mode ->
+                        Button(
+                            onClick = {
+                                selectedMode = mode
+                                if (selectedOpponent == OpponentType.Free) {
+                                    step = 3
+                                } else {
+                                    val s1 = PlayerSkin.Human
+                                    val s2 = when (selectedOpponent) {
+                                        OpponentType.AI -> PlayerSkin.Robot
+                                        OpponentType.Alien -> PlayerSkin.Alien
+                                        OpponentType.Cat -> PlayerSkin.Cat
+                                        else -> PlayerSkin.Human
+                                    }
+                                    onStartGame(selectedOpponent, mode, s1, s2)
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(0.6f)
+                        ) {
+                            Text(text = when(mode) {
+                                GameMode.Single -> "Single Match"
+                                GameMode.BestOf3 -> "Best of 3"
+                                GameMode.BattleRoyale -> "Battle Royale"
+                            }, fontSize = 20.sp)
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+                    Button(onClick = { step = 1 }, modifier = Modifier.fillMaxWidth(0.4f)) {
+                        Text(text = "Back")
+                    }
                 }
-            } else {
-                Button(
-                    onClick = { onStartGame(selectedOpponent, GameMode.Single) },
-                    modifier = Modifier.fillMaxWidth(0.6f)
-                ) {
-                    Text(text = "Single Match", fontSize = 20.sp)
+                3 -> {
+                    Text(
+                        text = "Choose first player",
+                        fontSize = 20.sp,
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(bottom = 24.dp)
+                    )
+                    val skins = listOf(PlayerSkin.Human, PlayerSkin.Alien, PlayerSkin.Cat)
+                    skins.forEach { skin ->
+                        Button(
+                            onClick = { p1Skin = skin; step = 4 },
+                            modifier = Modifier.fillMaxWidth(0.6f)
+                        ) { Text(text = skin.name, fontSize = 20.sp) }
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+                    Button(onClick = { step = 2 }, modifier = Modifier.fillMaxWidth(0.4f)) {
+                        Text(text = "Back")
+                    }
                 }
-                Spacer(modifier = Modifier.height(16.dp))
-                Button(
-                    onClick = { onStartGame(selectedOpponent, GameMode.BestOf3) },
-                    modifier = Modifier.fillMaxWidth(0.6f)
-                ) {
-                    Text(text = "Best of 3", fontSize = 20.sp)
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-                Button(
-                    onClick = { onStartGame(selectedOpponent, GameMode.BattleRoyale) },
-                    modifier = Modifier.fillMaxWidth(0.6f)
-                ) {
-                    Text(text = "Battle Royale", fontSize = 20.sp)
-                }
-                Spacer(modifier = Modifier.height(32.dp))
-                Button(
-                    onClick = { step = 1 },
-                    modifier = Modifier.fillMaxWidth(0.4f)
-                ) {
-                    Text(text = "Back")
+                4 -> {
+                    Text(
+                        text = "Choose second player",
+                        fontSize = 20.sp,
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(bottom = 24.dp)
+                    )
+                    val skins = listOf(PlayerSkin.Human, PlayerSkin.Alien, PlayerSkin.Cat)
+                    skins.forEach { skin ->
+                        Button(
+                            onClick = { onStartGame(OpponentType.Free, selectedMode, p1Skin, skin) },
+                            modifier = Modifier.fillMaxWidth(0.6f)
+                        ) { Text(text = skin.name, fontSize = 20.sp) }
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+                    Button(onClick = { step = 3 }, modifier = Modifier.fillMaxWidth(0.4f)) {
+                        Text(text = "Back")
+                    }
                 }
             }
         }
@@ -173,7 +250,7 @@ fun HomeScreen(onStartGame: (OpponentType, GameMode) -> Unit, modifier: Modifier
 @Composable
 fun TrisBackground() {
     Canvas(modifier = Modifier.fillMaxSize()) {
-        val color = Color.Gray.copy(alpha = 0.05f)
+        val color = Color.Gray.copy(alpha = 0.1f)
         val strokeWidth = 8.dp.toPx()
 
         // Draw a large faint grid
@@ -254,7 +331,14 @@ fun TrisBackground() {
 }
 
 @Composable
-fun GameScreen(opponentType: OpponentType, gameMode: GameMode, onBackToHome: () -> Unit, modifier: Modifier = Modifier) {
+fun GameScreen(
+    opponentType: OpponentType,
+    gameMode: GameMode,
+    p1Skin: PlayerSkin,
+    p2Skin: PlayerSkin,
+    onBackToHome: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     var scoreO by remember { mutableIntStateOf(0) }
     var scoreX by remember { mutableIntStateOf(0) }
     var startingPlayer by remember { mutableStateOf(if (Random.nextBoolean()) Player.O else Player.X) }
@@ -266,10 +350,29 @@ fun GameScreen(opponentType: OpponentType, gameMode: GameMode, onBackToHome: () 
     var matchWinner by remember { mutableStateOf(null as Player?) }
     var isDraw by remember { mutableStateOf(false) }
 
+    val circleColor = Color.Blue
+    val crossColor = when (opponentType) {
+        OpponentType.Free -> Color.Red
+        OpponentType.AI -> Color.Green
+        OpponentType.Alien -> Color.Gray
+        OpponentType.Cat -> Color.Black
+        else -> Color.Red
+    }
+
+    val nameO = if (opponentType == OpponentType.Free) p1Skin.name else "Circle"
+    val nameX = if (opponentType == OpponentType.Free) p2Skin.name else when (opponentType) {
+        OpponentType.Human -> "Cross"
+        OpponentType.AI -> "AI"
+        OpponentType.Alien -> "Aliens"
+        OpponentType.Cat -> "Cats"
+        else -> "Cross"
+    }
+
     val onCellClick: (Int) -> Unit = { index ->
         if (board[index] == null && roundWinner == null && matchWinner == null && !isDraw) {
-            // In Versus AI, only allow clicking if it's Player O's turn
-            if (opponentType != OpponentType.AI || currentPlayer == Player.O) {
+            // In VS AI modes, only allow clicking if it's Player O's turn
+            val isP2AI = opponentType in listOf(OpponentType.AI, OpponentType.Alien, OpponentType.Cat)
+            if (!isP2AI || currentPlayer == Player.O) {
                 val newBoard = board.toMutableList()
                 newBoard[index] = currentPlayer
                 board = newBoard
@@ -286,7 +389,6 @@ fun GameScreen(opponentType: OpponentType, gameMode: GameMode, onBackToHome: () 
                     } else if (gameMode == GameMode.BestOf3 && (scoreO == 2 || scoreX == 2)) {
                         matchWinner = result
                     }
-                    // Battle Royale never sets matchWinner
                 } else if (newBoard.none { it == null }) {
                     isDraw = true
                 } else {
@@ -296,9 +398,10 @@ fun GameScreen(opponentType: OpponentType, gameMode: GameMode, onBackToHome: () 
         }
     }
 
-    // AI Logic
+    // AI/Alien/Cat Logic
     LaunchedEffect(currentPlayer, roundWinner, matchWinner, isDraw) {
-        if (opponentType == OpponentType.AI && currentPlayer == Player.X && roundWinner == null && matchWinner == null && !isDraw) {
+        val isP2AI = opponentType in listOf(OpponentType.AI, OpponentType.Alien, OpponentType.Cat)
+        if (isP2AI && currentPlayer == Player.X && roundWinner == null && matchWinner == null && !isDraw) {
             delay(600) // Small delay for better UX
             val aiMove = getAiMove(board, Player.X, Player.O)
             if (aiMove != -1) {
@@ -327,7 +430,7 @@ fun GameScreen(opponentType: OpponentType, gameMode: GameMode, onBackToHome: () 
 
     val resetRound = {
         board = List(9) { null }
-        val nextStart = if (Random.nextBoolean()) Player.O else Player.X
+        val nextStart = if (startingPlayer == Player.O) Player.X else Player.O
         startingPlayer = nextStart
         currentPlayer = nextStart
         winningPattern = null
@@ -341,7 +444,7 @@ fun GameScreen(opponentType: OpponentType, gameMode: GameMode, onBackToHome: () 
     }
 
     Box(modifier = modifier.fillMaxSize()) {
-        GameBackground(opponentType)
+        GameBackground(p1Skin, p2Skin, circleColor, crossColor)
         Column(
             modifier = Modifier.fillMaxSize().padding(16.dp),
             verticalArrangement = Arrangement.Center,
@@ -352,28 +455,28 @@ fun GameScreen(opponentType: OpponentType, gameMode: GameMode, onBackToHome: () 
                     modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    ScoreText(label = "Circle", score = scoreO, color = Color.Blue)
-                    ScoreText(label = "Cross", score = scoreX, color = Color.Red)
+                    ScoreText(label = nameO, score = scoreO, color = circleColor)
+                    ScoreText(label = nameX, score = scoreX, color = crossColor)
                 }
             }
 
             val resultText = when {
-                matchWinner != null -> "Player ${if (matchWinner == Player.O) "Circle" else "Cross"} wins the match!"
+                matchWinner != null -> "${if (matchWinner == Player.O) nameO else nameX} wins the match."
                 roundWinner != null -> {
-                    val winnerName = if (roundWinner == Player.O) "Circle" else "Cross"
+                    val winnerName = if (roundWinner == Player.O) nameO else nameX
                     if (gameMode == GameMode.BattleRoyale) {
                         val battleStatus = when {
-                            scoreO > scoreX -> "Player Circle is winning the battle"
-                            scoreX > scoreO -> "Player Cross is winning the battle"
+                            scoreO > scoreX -> "$nameO is winning the battle"
+                            scoreX > scoreO -> "$nameX is winning the battle"
                             else -> "The battle hangs in the balance"
                         }
-                        "Player $winnerName wins the round. $battleStatus"
+                        "$winnerName wins the round. $battleStatus."
                     } else {
-                        "Player $winnerName wins the round!"
+                        "$winnerName wins the round."
                     }
                 }
-                isDraw -> "It's a Draw!"
-                else -> "Player ${if (currentPlayer == Player.O) "Circle" else "Cross"}'s Turn"
+                isDraw -> "It's a Draw."
+                else -> "${if (currentPlayer == Player.O) nameO else nameX}'s Turn."
             }
 
             Text(
@@ -384,7 +487,7 @@ fun GameScreen(opponentType: OpponentType, gameMode: GameMode, onBackToHome: () 
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
 
-            Board(board, winningPattern, onCellClick)
+            Board(board, winningPattern, circleColor, crossColor, p1Skin, p2Skin, onCellClick)
 
             Spacer(modifier = Modifier.height(48.dp))
 
@@ -408,20 +511,26 @@ fun GameScreen(opponentType: OpponentType, gameMode: GameMode, onBackToHome: () 
 }
 
 @Composable
-fun GameBackground(opponentType: OpponentType) {
+fun GameBackground(p1Skin: PlayerSkin, p2Skin: PlayerSkin, circleColor: Color, crossColor: Color) {
     Canvas(modifier = Modifier.fillMaxSize()) {
-        val color = Color.Gray.copy(alpha = 0.05f)
         val strokeWidth = 4.dp.toPx()
+        val verticalOffset = size.height * 0.08f
+        val alpha = 0.25f
 
-        if (opponentType == OpponentType.Human) {
-            // Draw two human icons
-            drawHumanIcon(Offset(size.width * 0.2f, size.height * 0.2f), color, strokeWidth)
-            drawHumanIcon(Offset(size.width * 0.8f, size.height * 0.2f), color, strokeWidth, isFemale = true)
-        } else {
-            // Draw a man and a robot
-            drawHumanIcon(Offset(size.width * 0.2f, size.height * 0.2f), color, strokeWidth)
-            drawRobotIcon(Offset(size.width * 0.8f, size.height * 0.2f), color, strokeWidth)
-        }
+        // Draw Player 1 icon on the left
+        drawSkinIcon(p1Skin, Offset(size.width * 0.15f, verticalOffset), circleColor.copy(alpha = alpha), strokeWidth)
+        
+        // Draw Player 2 icon on the right
+        drawSkinIcon(p2Skin, Offset(size.width * 0.85f, verticalOffset), crossColor.copy(alpha = alpha), strokeWidth)
+    }
+}
+
+fun androidx.compose.ui.graphics.drawscope.DrawScope.drawSkinIcon(skin: PlayerSkin, center: Offset, color: Color, strokeWidth: Float) {
+    when (skin) {
+        PlayerSkin.Human -> drawHumanIcon(center, color, strokeWidth)
+        PlayerSkin.Robot -> drawRobotIcon(center, color, strokeWidth)
+        PlayerSkin.Alien -> drawStarshipIcon(center, color, strokeWidth)
+        PlayerSkin.Cat -> drawCatIcon(center, color, strokeWidth)
     }
 }
 
@@ -429,7 +538,8 @@ fun androidx.compose.ui.graphics.drawscope.DrawScope.drawHumanIcon(
     center: Offset,
     color: Color,
     strokeWidth: Float,
-    isFemale: Boolean = false
+    isFemale: Boolean = false,
+    isCombined: Boolean = false
 ) {
     val headRadius = 20.dp.toPx()
     val bodyHeight = 40.dp.toPx()
@@ -438,15 +548,26 @@ fun androidx.compose.ui.graphics.drawscope.DrawScope.drawHumanIcon(
     // Head
     drawCircle(color = color, radius = headRadius, center = center.copy(y = center.y - headRadius - 5f), style = Stroke(width = strokeWidth))
 
-    if (isFemale) {
+    if (isFemale || isCombined) {
         // Dress/Body (Triangle-ish)
         val path = androidx.compose.ui.graphics.Path().apply {
             moveTo(center.x, center.y)
-            lineTo(center.x - bodyWidth / 2, center.y + bodyHeight)
-            lineTo(center.x + bodyWidth / 2, center.y + bodyHeight)
+            if (isCombined) {
+                // Combined: half straight, half skirt
+                lineTo(center.x, center.y + bodyHeight)
+                lineTo(center.x + bodyWidth / 2, center.y + bodyHeight)
+            } else {
+                lineTo(center.x - bodyWidth / 2, center.y + bodyHeight)
+                lineTo(center.x + bodyWidth / 2, center.y + bodyHeight)
+            }
             close()
         }
         drawPath(path = path, color = color, style = Stroke(width = strokeWidth))
+        
+        if (isCombined) {
+            // Draw the other straight half
+            drawLine(color = color, start = center, end = center.copy(y = center.y + bodyHeight), strokeWidth = strokeWidth)
+        }
     } else {
         // Body (Simple line)
         drawLine(color = color, start = center, end = center.copy(y = center.y + bodyHeight), strokeWidth = strokeWidth)
@@ -456,8 +577,18 @@ fun androidx.compose.ui.graphics.drawscope.DrawScope.drawHumanIcon(
     drawLine(color = color, start = center.copy(y = center.y + 10f), end = Offset(center.x - 20.dp.toPx(), center.y + 30.dp.toPx()), strokeWidth = strokeWidth)
     drawLine(color = color, start = center.copy(y = center.y + 10f), end = Offset(center.x + 20.dp.toPx(), center.y + 30.dp.toPx()), strokeWidth = strokeWidth)
 
-    // Legs (if not female or simple legs)
-    if (!isFemale) {
+    // Legs
+    if (isFemale || isCombined) {
+        // Legs
+        if (isCombined) {
+            // One straight leg, one skirt leg
+            drawLine(color = color, start = center.copy(y = center.y + bodyHeight), end = Offset(center.x - 15.dp.toPx(), center.y + bodyHeight + 20.dp.toPx()), strokeWidth = strokeWidth)
+            drawLine(color = color, start = Offset(center.x + 10.dp.toPx(), center.y + bodyHeight), end = Offset(center.x + 10.dp.toPx(), center.y + bodyHeight + 20.dp.toPx()), strokeWidth = strokeWidth)
+        } else {
+            drawLine(color = color, start = Offset(center.x - 10.dp.toPx(), center.y + bodyHeight), end = Offset(center.x - 10.dp.toPx(), center.y + bodyHeight + 20.dp.toPx()), strokeWidth = strokeWidth)
+            drawLine(color = color, start = Offset(center.x + 10.dp.toPx(), center.y + bodyHeight), end = Offset(center.x + 10.dp.toPx(), center.y + bodyHeight + 20.dp.toPx()), strokeWidth = strokeWidth)
+        }
+    } else {
         drawLine(color = color, start = center.copy(y = center.y + bodyHeight), end = Offset(center.x - 15.dp.toPx(), center.y + bodyHeight + 20.dp.toPx()), strokeWidth = strokeWidth)
         drawLine(color = color, start = center.copy(y = center.y + bodyHeight), end = Offset(center.x + 15.dp.toPx(), center.y + bodyHeight + 20.dp.toPx()), strokeWidth = strokeWidth)
     }
@@ -478,6 +609,163 @@ fun androidx.compose.ui.graphics.drawscope.DrawScope.drawRobotIcon(
     // Eyes
     drawCircle(color = color, radius = 2.dp.toPx(), center = Offset(center.x - 5.dp.toPx(), center.y - size / 2.5f))
     drawCircle(color = color, radius = 2.dp.toPx(), center = Offset(center.x + 5.dp.toPx(), center.y - size / 2.5f))
+    // Legs
+    drawLine(color = color, start = Offset(center.x - size / 4, center.y + size - size / 6), end = Offset(center.x - size / 4, center.y + size + size / 3), strokeWidth = strokeWidth)
+    drawLine(color = color, start = Offset(center.x + size / 4, center.y + size - size / 6), end = Offset(center.x + size / 4, center.y + size + size / 3), strokeWidth = strokeWidth)
+}
+
+fun androidx.compose.ui.graphics.drawscope.DrawScope.drawStarshipIcon(
+    center: Offset,
+    color: Color,
+    strokeWidth: Float
+) {
+    val width = 45.dp.toPx()
+    val height = 25.dp.toPx()
+    
+    // Main body (Saucer)
+    drawOval(
+        color = color,
+        topLeft = Offset(center.x - width / 2, center.y - height / 4),
+        size = androidx.compose.ui.geometry.Size(width, height),
+        style = Stroke(width = strokeWidth)
+    )
+    
+    // Dome
+    drawArc(
+        color = color,
+        startAngle = 180f,
+        sweepAngle = 180f,
+        useCenter = false,
+        topLeft = Offset(center.x - width / 4, center.y - height / 2),
+        size = androidx.compose.ui.geometry.Size(width / 2, height),
+        style = Stroke(width = strokeWidth)
+    )
+    
+    // Antennas
+    drawLine(
+        color = color,
+        start = Offset(center.x, center.y - height / 2),
+        end = Offset(center.x, center.y - height * 0.8f),
+        strokeWidth = strokeWidth
+    )
+    
+    // Lights on the saucer
+    for (i in -2..2) {
+        drawCircle(
+            color = color,
+            radius = 2.dp.toPx(),
+            center = Offset(center.x + i * width / 6, center.y + height / 8)
+        )
+    }
+
+    // Beams
+    drawLine(
+        color = color,
+        start = Offset(center.x - width / 4, center.y + height / 4),
+        end = Offset(center.x - width / 3, center.y + height * 1.5f),
+        strokeWidth = strokeWidth / 2,
+        pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
+    )
+    drawLine(
+        color = color,
+        start = Offset(center.x + width / 4, center.y + height / 4),
+        end = Offset(center.x + width / 3, center.y + height * 1.5f),
+        strokeWidth = strokeWidth / 2,
+        pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
+    )
+}
+
+fun androidx.compose.ui.graphics.drawscope.DrawScope.drawAlienFace(center: Offset, color: Color) {
+    val width = 30.dp.toPx()
+    val height = 35.dp.toPx()
+    val strokeWidth = 2.dp.toPx()
+
+    // Head
+    val path = androidx.compose.ui.graphics.Path().apply {
+        moveTo(center.x, center.y - height / 2)
+        quadraticTo(center.x + width / 2, center.y - height / 2, center.x + width / 2, center.y)
+        quadraticTo(center.x + width / 2, center.y + height / 2, center.x, center.y + height / 2)
+        quadraticTo(center.x - width / 2, center.y + height / 2, center.x - width / 2, center.y)
+        quadraticTo(center.x - width / 2, center.y - height / 2, center.x, center.y - height / 2)
+        close()
+    }
+    drawPath(path = path, color = color, style = Stroke(width = strokeWidth))
+
+    // Eyes
+    val leftEye = androidx.compose.ui.graphics.Path().apply {
+        moveTo(center.x - 10.dp.toPx(), center.y - 2.dp.toPx())
+        quadraticTo(center.x - 5.dp.toPx(), center.y - 12.dp.toPx(), center.x - 2.dp.toPx(), center.y - 2.dp.toPx())
+        quadraticTo(center.x - 5.dp.toPx(), center.y + 2.dp.toPx(), center.x - 10.dp.toPx(), center.y - 2.dp.toPx())
+        close()
+    }
+    drawPath(path = leftEye, color = color)
+
+    val rightEye = androidx.compose.ui.graphics.Path().apply {
+        moveTo(center.x + 10.dp.toPx(), center.y - 2.dp.toPx())
+        quadraticTo(center.x + 5.dp.toPx(), center.y - 12.dp.toPx(), center.x + 2.dp.toPx(), center.y - 2.dp.toPx())
+        quadraticTo(center.x + 5.dp.toPx(), center.y + 2.dp.toPx(), center.x + 10.dp.toPx(), center.y - 2.dp.toPx())
+        close()
+    }
+    drawPath(path = rightEye, color = color)
+}
+
+fun androidx.compose.ui.graphics.drawscope.DrawScope.drawCatIcon(
+    center: Offset,
+    color: Color,
+    strokeWidth: Float
+) {
+    val headRadius = 18.dp.toPx()
+    val bodyWidth = 35.dp.toPx()
+    val bodyHeight = 45.dp.toPx()
+    
+    // Body (Sitting)
+    val bodyPath = androidx.compose.ui.graphics.Path().apply {
+        moveTo(center.x - bodyWidth / 3, center.y + headRadius)
+        quadraticTo(center.x - bodyWidth / 2, center.y + bodyHeight, center.x - bodyWidth / 2, center.y + bodyHeight)
+        lineTo(center.x + bodyWidth / 2, center.y + bodyHeight)
+        quadraticTo(center.x + bodyWidth / 2, center.y + headRadius, center.x + bodyWidth / 3, center.y + headRadius)
+        close()
+    }
+    drawPath(path = bodyPath, color = color, style = Stroke(width = strokeWidth))
+
+    // Tail
+    val tailPath = androidx.compose.ui.graphics.Path().apply {
+        moveTo(center.x + bodyWidth / 2, center.y + bodyHeight - 5.dp.toPx())
+        quadraticTo(center.x + bodyWidth, center.y + bodyHeight / 2, center.x + bodyWidth / 1.5f, center.y + bodyHeight / 4)
+    }
+    drawPath(path = tailPath, color = color, style = Stroke(width = strokeWidth))
+
+    // Face
+    drawCircle(color = color, radius = headRadius, center = center, style = Stroke(width = strokeWidth))
+    
+    // Ears
+    val leftEar = androidx.compose.ui.graphics.Path().apply {
+        moveTo(center.x - headRadius * 0.8f, center.y - headRadius * 0.5f)
+        lineTo(center.x - headRadius * 1.2f, center.y - headRadius * 1.5f)
+        lineTo(center.x - headRadius * 0.2f, center.y - headRadius * 0.9f)
+    }
+    drawPath(path = leftEar, color = color, style = Stroke(width = strokeWidth))
+    
+    val rightEar = androidx.compose.ui.graphics.Path().apply {
+        moveTo(center.x + headRadius * 0.8f, center.y - headRadius * 0.5f)
+        lineTo(center.x + headRadius * 1.2f, center.y - headRadius * 1.5f)
+        lineTo(center.x + headRadius * 0.2f, center.y - headRadius * 0.9f)
+    }
+    drawPath(path = rightEar, color = color, style = Stroke(width = strokeWidth))
+    
+    // Eyes
+    drawCircle(color = color, radius = 3.dp.toPx(), center = Offset(center.x - 7.dp.toPx(), center.y - 2.dp.toPx()))
+    drawCircle(color = color, radius = 3.dp.toPx(), center = Offset(center.x + 7.dp.toPx(), center.y - 2.dp.toPx()))
+    
+    // Nose
+    drawCircle(color = color, radius = 2.dp.toPx(), center = Offset(center.x, center.y + 4.dp.toPx()))
+    
+    // Whiskers
+    drawLine(color = color, start = Offset(center.x - 8.dp.toPx(), center.y + 7.dp.toPx()), end = Offset(center.x - 25.dp.toPx(), center.y + 4.dp.toPx()), strokeWidth = strokeWidth / 2)
+    drawLine(color = color, start = Offset(center.x - 8.dp.toPx(), center.y + 9.dp.toPx()), end = Offset(center.x - 25.dp.toPx(), center.y + 14.dp.toPx()), strokeWidth = strokeWidth / 2)
+    
+    drawLine(color = color, start = Offset(center.x + 8.dp.toPx(), center.y + 7.dp.toPx()), end = Offset(center.x + 25.dp.toPx(), center.y + 4.dp.toPx()), strokeWidth = strokeWidth / 2)
+    drawLine(color = color, start = Offset(center.x + 8.dp.toPx(), center.y + 9.dp.toPx()), end = Offset(center.x + 25.dp.toPx(), center.y + 14.dp.toPx()), strokeWidth = strokeWidth / 2)
 }
 
 @Composable
@@ -489,7 +777,7 @@ fun ScoreText(label: String, score: Int, color: Color) {
 }
 
 @Composable
-fun Board(board: List<Player?>, winningPattern: List<Int>?, onCellClick: (Int) -> Unit) {
+fun Board(board: List<Player?>, winningPattern: List<Int>?, circleColor: Color, crossColor: Color, p1Skin: PlayerSkin, p2Skin: PlayerSkin, onCellClick: (Int) -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -503,6 +791,10 @@ fun Board(board: List<Player?>, winningPattern: List<Int>?, onCellClick: (Int) -
                         val index = row * 3 + col
                         Cell(
                             player = board[index],
+                            circleColor = circleColor,
+                            crossColor = crossColor,
+                            p1Skin = p1Skin,
+                            p2Skin = p2Skin,
                             onClick = { onCellClick(index) },
                             modifier = Modifier.weight(1f)
                         )
@@ -514,8 +806,8 @@ fun Board(board: List<Player?>, winningPattern: List<Int>?, onCellClick: (Int) -
         if (winningPattern != null) {
             val winningPlayer = board[winningPattern[0]]
             val lineColor = when (winningPlayer) {
-                Player.X -> Color.Red
-                Player.O -> Color.Blue
+                Player.X -> crossColor
+                Player.O -> circleColor
                 else -> Color.Black
             }
             Canvas(modifier = Modifier.fillMaxSize()) {
@@ -544,7 +836,7 @@ fun Board(board: List<Player?>, winningPattern: List<Int>?, onCellClick: (Int) -
 }
 
 @Composable
-fun Cell(player: Player?, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun Cell(player: Player?, circleColor: Color, crossColor: Color, p1Skin: PlayerSkin, p2Skin: PlayerSkin, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -552,21 +844,40 @@ fun Cell(player: Player?, onClick: () -> Unit, modifier: Modifier = Modifier) {
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = when (player) {
-                Player.X -> "X"
-                Player.O -> "O"
-                null -> ""
-            },
-            fontSize = 48.sp,
-            fontWeight = FontWeight.Bold,
-            color = when (player) {
-                Player.X -> Color.Red
-                Player.O -> Color.Blue
-                null -> Color.Unspecified
+        if (player != null) {
+            val color = if (player == Player.O) circleColor else crossColor
+            val skin = if (player == Player.O) p1Skin else p2Skin
+
+            when (skin) {
+                PlayerSkin.Cat -> Canvas(modifier = Modifier.size(48.dp)) {
+                    drawCatFootprint(this.size.center, color)
+                }
+                PlayerSkin.Alien -> Canvas(modifier = Modifier.size(48.dp)) {
+                    drawAlienFace(this.size.center, color)
+                }
+                else -> Text(
+                    text = if (player == Player.O) "O" else "X",
+                    fontSize = 48.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = color
+                )
             }
-        )
+        }
     }
+}
+
+fun androidx.compose.ui.graphics.drawscope.DrawScope.drawCatFootprint(center: Offset, color: Color) {
+    val mainPadRadius = 12.dp.toPx()
+    val toeRadius = 5.dp.toPx()
+    
+    // Main pad
+    drawCircle(color = color, radius = mainPadRadius, center = center.copy(y = center.y + 5.dp.toPx()))
+    
+    // Toes
+    drawCircle(color = color, radius = toeRadius, center = Offset(center.x - 12.dp.toPx(), center.y - 8.dp.toPx()))
+    drawCircle(color = color, radius = toeRadius, center = Offset(center.x - 4.dp.toPx(), center.y - 14.dp.toPx()))
+    drawCircle(color = color, radius = toeRadius, center = Offset(center.x + 4.dp.toPx(), center.y - 14.dp.toPx()))
+    drawCircle(color = color, radius = toeRadius, center = Offset(center.x + 12.dp.toPx(), center.y - 8.dp.toPx()))
 }
 
 fun getAiMove(board: List<Player?>, ai: Player, opponent: Player): Int {
