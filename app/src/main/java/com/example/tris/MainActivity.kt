@@ -22,6 +22,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -93,8 +94,12 @@ fun HomeScreen(onStartGame: () -> Unit, modifier: Modifier = Modifier) {
 
 @Composable
 fun GameScreen(onBackToHome: () -> Unit, modifier: Modifier = Modifier) {
+    var scoreO by remember { mutableIntStateOf(0) }
+    var scoreX by remember { mutableIntStateOf(0) }
+    var startingPlayer by remember { mutableStateOf(Player.O) }
+
     var board by remember { mutableStateOf(List(9) { null as Player? }) }
-    var currentPlayer by remember { mutableStateOf(Player.O) } // Circle first as per request
+    var currentPlayer by remember { mutableStateOf(startingPlayer) }
     var winner by remember { mutableStateOf(null as Player?) }
     var isDraw by remember { mutableStateOf(false) }
 
@@ -104,20 +109,23 @@ fun GameScreen(onBackToHome: () -> Unit, modifier: Modifier = Modifier) {
             newBoard[index] = currentPlayer
             board = newBoard
 
-            winner = checkWinner(newBoard)
-            if (winner == null) {
-                if (newBoard.none { it == null }) {
-                    isDraw = true
-                } else {
-                    currentPlayer = if (currentPlayer == Player.X) Player.O else Player.X
-                }
+            val result = checkWinner(newBoard)
+            if (result != null) {
+                winner = result
+                if (result == Player.O) scoreO++ else scoreX++
+            } else if (newBoard.none { it == null }) {
+                isDraw = true
+            } else {
+                currentPlayer = if (currentPlayer == Player.X) Player.O else Player.X
             }
         }
     }
 
     val resetGame = {
         board = List(9) { null }
-        currentPlayer = Player.O
+        val nextStart = if (startingPlayer == Player.O) Player.X else Player.O
+        startingPlayer = nextStart
+        currentPlayer = nextStart
         winner = null
         isDraw = false
     }
@@ -127,6 +135,14 @@ fun GameScreen(onBackToHome: () -> Unit, modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            ScoreText(label = "Circle", score = scoreO, color = Color.Blue)
+            ScoreText(label = "Cross", score = scoreX, color = Color.Red)
+        }
+
         Text(
             text = when {
                 winner != null -> "Player ${if (winner == Player.O) "Circle" else "Cross"} Wins!"
@@ -152,6 +168,14 @@ fun GameScreen(onBackToHome: () -> Unit, modifier: Modifier = Modifier) {
         Button(onClick = onBackToHome, modifier = Modifier.fillMaxWidth(0.6f)) {
             Text("Back")
         }
+    }
+}
+
+@Composable
+fun ScoreText(label: String, score: Int, color: Color) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(text = label, fontSize = 18.sp, fontWeight = FontWeight.Medium)
+        Text(text = score.toString(), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = color)
     }
 }
 
