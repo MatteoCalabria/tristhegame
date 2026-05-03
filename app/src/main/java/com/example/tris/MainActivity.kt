@@ -359,8 +359,8 @@ fun GameScreen(
         else -> Color.Red
     }
 
-    val nameO = if (opponentType == OpponentType.Free) p1Skin.name else "Circle"
-    val nameX = if (opponentType == OpponentType.Free) p2Skin.name else when (opponentType) {
+    val nameO = if (opponentType == OpponentType.Free) "${p1Skin.name} 1" else "Circle"
+    val nameX = if (opponentType == OpponentType.Free) "${p2Skin.name} 2" else when (opponentType) {
         OpponentType.Human -> "Cross"
         OpponentType.AI -> "AI"
         OpponentType.Alien -> "Aliens"
